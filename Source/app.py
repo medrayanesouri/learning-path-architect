@@ -474,7 +474,8 @@ def main_ui() -> None:
     total_tasks = weeks * 7
     done_count = len(completed_tasks)
     pct = done_count / total_tasks if total_tasks else 0
-    st.progress(pct, text=f"Progression globale : {done_count}/{total_tasks} tâches ({pct * 100:.0f} %)")
+    pct_display = f"{pct * 100:.0f} %"
+    st.progress(pct, text=f"Progression globale : {done_count}/{total_tasks} tâches ({pct_display})")
 
     # Current week / day
     today = date.today()
@@ -541,7 +542,9 @@ def main_ui() -> None:
         if domain_quiz:
             st.divider()
             st.subheader("Questions de connaissance")
-            sample = random.sample(domain_quiz, min(3, len(domain_quiz)))
+            # Seed by week number so questions are consistent within the same week
+            rng = random.Random(current_week)
+            sample = rng.sample(domain_quiz, min(3, len(domain_quiz)))
             for q, a in sample:
                 st.write(f"**Q :** {q}")
                 with st.expander("Voir la réponse"):
@@ -553,7 +556,7 @@ def main_ui() -> None:
         col1, col2, col3 = st.columns(3)
         col1.metric("Tâches complétées", f"{done_count} / {total_tasks}")
         col2.metric("Semaine actuelle", f"{current_week + 1} / {weeks}")
-        col3.metric("Progression", f"{pct * 100:.0f} %")
+        col3.metric("Progression", pct_display)
         st.progress(pct)
 
         st.divider()
