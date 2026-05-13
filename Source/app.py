@@ -23,8 +23,13 @@ def sanitize_user_id(user_id: str) -> str:
 
 
 def profile_path(user_id: str) -> str:
-    safe_id = sanitize_user_id(user_id)
-    return os.path.join(DATA_DIR, f"{safe_id}.json")
+    # Remove unsafe characters, then take only the basename to prevent traversal
+    safe_id = os.path.basename(sanitize_user_id(user_id))
+    abs_data = os.path.realpath(DATA_DIR)
+    resolved = os.path.realpath(os.path.join(abs_data, f"{safe_id}.json"))
+    if not resolved.startswith(abs_data + os.sep):
+        raise ValueError("user_id resolves to a path outside the data directory")
+    return resolved
 
 
 def load_profile(user_id: str):
@@ -286,7 +291,7 @@ def fetch_devto(tag: str) -> list:
     cache_key = f"devto_{tag}"
     now = datetime.now()
     cached = st.session_state.get(cache_key)
-    if cached and (now - cached["ts"]).seconds < 3600:
+    if cached and (now - cached["ts"]).total_seconds() < 3600:
         return cached["data"]
     try:
         resp = requests.get(
