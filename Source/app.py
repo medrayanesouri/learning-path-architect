@@ -1,6 +1,7 @@
 import json
 import os
 import random
+import re
 import requests
 from datetime import date, datetime
 
@@ -13,9 +14,17 @@ st.set_page_config(page_title="Learning Path Architect", page_icon="🧭")
 DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
 
+_SAFE_ID_RE = re.compile(r"[^a-zA-Z0-9_\-]")
+
+
+def sanitize_user_id(user_id: str) -> str:
+    """Strip any characters that are not safe for use in a filename."""
+    return _SAFE_ID_RE.sub("", user_id)
+
 
 def profile_path(user_id: str) -> str:
-    return os.path.join(DATA_DIR, f"{user_id}.json")
+    safe_id = sanitize_user_id(user_id)
+    return os.path.join(DATA_DIR, f"{safe_id}.json")
 
 
 def load_profile(user_id: str):
@@ -151,7 +160,7 @@ RESOURCES: dict[str, list[tuple[str, str]]] = {
     ],
     "Prompt Engineering": [
         ("OpenAI Academy – Prompting Fundamentals", "https://openai.com/academy/prompting/"),
-        ("OpenAI Help – Prompting Best Practices", "https://help.openai.com/en/articles/10032626-prompt-ingineering-best-practices-for-chatgpt"),
+        ("OpenAI Help – Prompting Best Practices", "https://help.openai.com/en/articles/10032626-prompt-engineering-best-practices-for-chatgpt"),
     ],
     "Anglais": [
         ("BBC Learning English", "https://www.bbc.co.uk/learningenglish"),
@@ -309,18 +318,20 @@ def conversation_ui() -> None:
 
     if step == "user_id":
         st.write("Bonjour ! Commençons par t'identifier.")
+        st.caption("L'identifiant ne doit contenir que des lettres, chiffres, tirets et underscores.")
         uid = st.text_input("Entrez votre identifiant utilisateur (ex : jean42)", key="input_uid")
         if st.button("Continuer", key="btn_uid"):
-            if not uid.strip():
-                st.warning("L'identifiant ne peut pas être vide.")
+            safe_uid = sanitize_user_id(uid.strip())
+            if not safe_uid:
+                st.warning("L'identifiant ne peut pas être vide et ne doit contenir que des lettres, chiffres, - et _.")
             else:
-                existing = load_profile(uid.strip())
+                existing = load_profile(safe_uid)
                 if existing:
                     st.session_state.profile = existing
                     st.session_state.step = "main"
                     st.rerun()
                 else:
-                    st.session_state.profile = {"user_id": uid.strip()}
+                    st.session_state.profile = {"user_id": safe_uid}
                     st.session_state.step = "name"
                     st.rerun()
 
