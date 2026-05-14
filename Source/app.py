@@ -9,7 +9,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Learning Path Architect", page_icon="🧭")
 
-# ─── Persistence ──────────────────────────────────────────────────────────────
+# ─── Persistence ─────────────────────────────────────────────────────────────
 
 DATA_DIR = "data"
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -45,7 +45,7 @@ def save_profile(profile: dict) -> None:
         json.dump(profile, f, ensure_ascii=False, indent=2)
 
 
-# ─── Domain knowledge ─────────────────────────────────────────────────────────
+# ─── Domain knowledge ────────────────────────────────────────────────────────
 
 DOMAIN_KEYWORDS: dict[str, list[str]] = {
     "Python": ["python"],
@@ -232,7 +232,8 @@ QUIZ_BANK: dict[str, list[tuple[str, str]]] = {
 DAY_NAMES = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"]
 
 
-# ─── Pure helpers ─────────────────────────────────────────────────────────────
+# ─── Pure helpers ───────────────────────────────────────────────────────────
+
 
 def suggest_domains(interests_text: str) -> list:
     """Return up to 3 domain suggestions based on keyword matching."""
@@ -284,7 +285,8 @@ def task_key(week_num: int, day: str) -> str:
     return f"{week_num}-{day}"
 
 
-# ─── Dev.to integration ───────────────────────────────────────────────────────
+# ─── Dev.to integration ──────────────────────────────────────────────────────
+
 
 def fetch_devto(tag: str) -> list:
     """Fetch Dev.to articles for a tag with a 1-hour session cache."""
@@ -298,7 +300,13 @@ def fetch_devto(tag: str) -> list:
             f"https://dev.to/api/articles?tag={tag}&per_page=10",
             timeout=5,
         )
-        data = resp.json() if resp.ok else []
+        if resp.ok:
+            try:
+                data = resp.json()
+            except ValueError:
+                data = []
+        else:
+            data = []
     except Exception:
         data = []
     st.session_state[cache_key] = {"ts": now, "data": data}
@@ -307,6 +315,7 @@ def fetch_devto(tag: str) -> list:
 
 # ─── Session initialisation ───────────────────────────────────────────────────
 
+
 def init_session() -> None:
     if "step" not in st.session_state:
         st.session_state.step = "user_id"
@@ -314,7 +323,8 @@ def init_session() -> None:
         st.session_state.profile = {}
 
 
-# ─── Conversation flow ────────────────────────────────────────────────────────
+# ─── Conversation flow ───────────────────────────────────────────────────────
+
 
 def conversation_ui() -> None:
     step = st.session_state.step
@@ -455,7 +465,8 @@ def conversation_ui() -> None:
                 st.rerun()
 
 
-# ─── Main tabbed UI ───────────────────────────────────────────────────────────
+# ─── Main tabbed UI ──────────────────────────────────────────────────────────
+
 
 def main_ui() -> None:
     profile = st.session_state.profile
@@ -514,7 +525,9 @@ def main_ui() -> None:
                 url = art.get("url", "#")
                 st.markdown(f"- [{title}]({url})")
         else:
-            st.info("Aucun article trouvé pour le moment (vérifie ta connexion).")
+            st.warning("Dev.to est indisponible ou trop lent. Voici des ressources statiques à la place.")
+            for res_title, res_url in RESOURCES.get(domain, []):
+                st.markdown(f"- [{res_title}]({res_url})")
 
         # Static official resources
         st.divider()
@@ -580,7 +593,7 @@ def main_ui() -> None:
         })
 
 
-# ─── Entry point ──────────────────────────────────────────────────────────────
+# ─── Entry point ─────────────────────────────────────────────────────────────
 
 init_session()
 
