@@ -1,0 +1,7 @@
+# data/ directory holds per-user JSON profiles generated at runtime
+data/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
